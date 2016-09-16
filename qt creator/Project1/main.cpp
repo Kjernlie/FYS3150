@@ -8,6 +8,8 @@
 #include "exe.cpp"
 #include "armadillo"
 #include <time.h>
+#include <string>
+#include <sstream>
 
 using namespace std;
 using namespace arma;
@@ -22,7 +24,7 @@ using namespace arma;
 int main(int argc, char *argv[])
 {
 
-    exb(argc, argv);
+    //exb(argc, argv);
     exc(argc, argv);
     //exd(argc, argv);
     //exe(argc, argv);

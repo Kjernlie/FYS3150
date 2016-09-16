@@ -10,7 +10,6 @@ using namespace std;
 
 
 // Problem d
-// Also, find the precise number of floating point operations
 
 void exd(int argc, char* argv[]) {
     // Get the size of the matrix
@@ -114,16 +113,10 @@ void exd(int argc, char* argv[]) {
         }
 
     }
-    cout << "The largest error is: " << temp << endl;
+    cout << "The largest relative error is: " << temp << endl;
+
     //------------------------------------------------------------------
-    //ofstream myfile;
-    //myfile.open(outfilename);
-    //myfile << setiosflags(ios::showpoint | ios::uppercase);
-    //for (int i = 1; i <= N; i++)
-    //{
-      //  myfile << x[i] << " " << u[i] << " " << v[i] << endl;
-    //}
-    //myfile.close();
+    // Release memory
 
     delete [] b_thingy;
     delete [] b_hat;

@@ -4,12 +4,13 @@
 #include <fstream>
 #include <iomanip>
 #include "exb.cpp"
+#include <string>
+#include <sstream>
 
 using namespace std;
 
 
 // Problem c
-// Also, find the precise number of floating point operations
 
 void exc(int argc, char* argv[]) {
     // Get the size of the matrix
@@ -30,6 +31,9 @@ void exc(int argc, char* argv[]) {
 
     // -------------------------------------------------------------------------
     // Stuff
+
+    clock_t start, finish;
+    start = clock();
 
     double h = 1./(N+1);
     double *x = new double[N+2];
@@ -52,8 +56,6 @@ void exc(int argc, char* argv[]) {
 
     // -------------------------------------------------------------------------
 
-    clock_t start, finish;
-    start = clock();
     // Create the x array
     for (int i = 0; i <= N+1; i++)
     {
@@ -62,7 +64,7 @@ void exc(int argc, char* argv[]) {
     cout << x[0] << " and " << x[N+1] << endl;  // just a check!
 
     // We find the closed form solution
-    // And we reate f*h^2, reffered to as b_thingy
+    // And we create f*h^2, reffered to as b_thingy
     b_thingy[0] = 0;
     for (int i = 1; i <= N; i++)
     {
@@ -70,14 +72,13 @@ void exc(int argc, char* argv[]) {
         u[i] = sol(x[i]);
     }
 
-    // Gauss elimination and forward substitution
+    // Forward substitution
     b_hat[1] = 2;
     f_hat[1] = b_thingy[1];
     for (int i = 2; i <= N; i++)
     {
         b_hat[i] = (i+1.0)/i;
         f_hat[i] = b_thingy[i] + (i-1.0)*f_hat[i-1]/(i+1.0-1.0);
-        //cout << f_hat[i] << " " << b_hat[i] << endl;
     }
 
     // Backward substitution
@@ -85,26 +86,37 @@ void exc(int argc, char* argv[]) {
     for (int i = N-1; i >= 1; i--)
     {
         v[i] = (i/(i+1.0))*(f_hat[i]+v[i+1]);
-        cout << v[i] << endl;
     }
-
-
-    finish = clock();
-    double timeused = (double) (finish - start)/(CLOCKS_PER_SEC );
-    cout << setiosflags(ios::showpoint | ios::uppercase);
-    cout << setprecision(10) << setw(20) << "Time used for our matrix=" << timeused << endl;
 
 
 
     //------------------------------------------------------------------
-    ofstream myfile;
+    // Stop time, and print it to screen
+
+    finish = clock();
+    double timeused = (double) (finish - start)/(CLOCKS_PER_SEC );
+    cout << "Time used for our matrix = " << timeused << " s" << endl;
+
+
+
+    //------------------------------------------------------------------
+    // Write to file
+
+    //ostringstream oss;
+    //oss << "balle" << N << ".txt";
+    //string var = oss.str();
+    //cout << var << endl;
+    //ofstream myfile;
     myfile.open(outfilename);
     //myfile << setiosflags(ios::showpoint | ios::uppercase);
-    for (int i = 1; i <= N; i++)
+    for (int i = 0; i <= N+1; i++)
     {
         myfile << x[i] << " " << u[i] << " " << v[i] << endl;
     }
     myfile.close();
+
+    //--------------------------------------------------------------------
+    // Release memory
 
     delete [] b_thingy;
     delete [] b_hat;

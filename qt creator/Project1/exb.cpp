@@ -7,7 +7,6 @@
 using namespace std;
 
 // Problem b)
-// Also, find precise number of floating point operations
 
 
 // create source function
@@ -43,6 +42,9 @@ void exb(int argc, char* argv[]) {
     // -------------------------------------------------------------------------
     // Stuff
 
+    clock_t start, finish;
+    start = clock();
+
     double h = 1./(N+1);
     double *x = new double[N+2];
     double *b_thingy = new double[N+1];
@@ -72,9 +74,6 @@ void exb(int argc, char* argv[]) {
     int *c = new int[N+1];
 
 
-    clock_t start, finish;
-    start = clock();
-
 
     // Create the x array
     for (int i = 0; i <= N+1; i++)
@@ -102,14 +101,13 @@ void exb(int argc, char* argv[]) {
     a[1] = 0;
     c[N] = 0;
 
-    // Gauss elimination and forward substitution
+    // Forward substitution
     b_hat[1] = b[1];
     f_hat[1] = b_thingy[1];
     for (int i = 2; i <= N; i++)
     {
         b_hat[i] = b[i] - (a[i]*c[i-1])/b_hat[i-1];
         f_hat[i] = b_thingy[i] - (a[i]*f_hat[i-1])/b_hat[i-1];
-        //cout << f_hat[i] << " " << b_hat[i] << endl;
     }
 
     // Backward substitution
@@ -117,15 +115,19 @@ void exb(int argc, char* argv[]) {
     for (int i = N-1; i >= 1; i--)
     {
         v[i] = (f_hat[i]-c[i]*v[i+1])/b_hat[i];
-        cout << v[i] << endl;
     }
+
+
+    // --------------------------------------------------------------------
+    // Stop time, and print to screen
 
     finish = clock();
     double timeused = (double) (finish - start)/(CLOCKS_PER_SEC );
-    cout << setiosflags(ios::showpoint | ios::uppercase);
-    cout << setprecision(10) << setw(20) << "Time used for a threediagonal matrix=" << timeused << endl;
+    cout << "Time used for a threediagonal matrix = " << timeused << " s" << endl;
+
+
     // ----------------------------------------------------------------
-    // Save to file (Do this again in another way!)
+    // Write to file
 
     ofstream myfile;
     myfile.open(outfilename);
@@ -135,6 +137,11 @@ void exb(int argc, char* argv[]) {
         myfile << x[i] << " " << u[i] << " " << v[i] << endl;
     }
     myfile.close();
+
+
+    // --------------------------------------------------------------------
+    // release memory
+
 
     delete [] a;
     delete [] b;
