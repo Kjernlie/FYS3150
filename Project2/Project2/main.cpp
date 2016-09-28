@@ -12,18 +12,37 @@ using namespace arma;
 int main()
 {
 
-//    int rho_min = 0.0;
-//    int rho_max = 10.0;
-//    int lOrbital = 0;
-//    int dim = 400;
+    // Initialize parameters
+    int rho_min = 0;
+    int rho_max = 10;
+    int N = 10;
 
+    // Initialize constants
+    double h = double(rho_max)/N;
+    double diag_const = 2.0/(h*h);
+    double nondiag_const = -1.0/(h*h);
 
-    int N = 2;
-    mat A = mat(N,N,fill::ones);
-    A(0,0) = 2;
-    A(1,1) = 2;
+    // Calculate array of potential values
+    vec v(N);
+    vec rho(N);
+    for (int i = 0; i<N; i++)
+    {
+        rho(i) = rho_min + (i+1)*h;
+        v(i) = rho(i)*rho(i);
+    }
 
-    cout << A << endl;
+    // Creating the threedimensional matrix
+    mat A = mat(N,N,fill::zeros);
+    A.diag(1).fill(nondiag_const);
+    A.diag(-1).fill(nondiag_const);
+    A.diag().fill(diag_const);
+
+    for (int i = 0; i < N; i++)
+    {
+        A(i,i) = A(i,i) + v(i);
+    }
+    //cout << A << endl;
+
 
     mat B;
     vec max;
@@ -40,9 +59,11 @@ int main()
         trig = trigonometry(A,max(1),max(2));
         B = make_B(A,max(1),max(2),trig(0),trig(1));
         A = B;
-        cout << counter << endl;
-        cout << A << endl;
     }
+
+    cout << A(0,0) << endl;
+    cout << A(1,1) << endl;
+    cout << A(2,2) << endl;
 
     return 0;
 }
