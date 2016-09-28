@@ -52,7 +52,7 @@ vec trigonometry(mat A, int k, int l)
     // Do I have to put in a case for akl = 0?
 
     vec trig = vec(2,fill::zeros);
-    double tau, t, s, c;
+    double tau, t;
 
     tau = (A(l,l) - A(k,k))/(2*A(k,l));
 
@@ -62,11 +62,11 @@ vec trigonometry(mat A, int k, int l)
     }
     else
     {
-        t = -1.0/(tau + sqrt(1.0+tau*tau));
+        t = -1.0/(-tau + sqrt(1.0+tau*tau));
     }
 
-    trig(0) = 1.0/sqrt(1+t*t);   // cosine
-    trig(1) = t*c;               // sine
+    trig(0) = 1.0/sqrt(1+t*t);          // cosine
+    trig(1) = t*trig(0);                // sine
 
     return trig;
 }
@@ -108,6 +108,30 @@ mat make_B(mat A, int k, int l, double c, double s)
 }
 
 // --------------------------------------------------------------------------------------------------------------
+// Function for testing if the off-diagonals are small enough!
 
 
+int testing(mat B, double tol)
+{
+    //If the off-diagonal elements are small enough,
+    //testing returns 1, otherwise it returns 0
+
+    vec max;
+    max = max_element(B);
+    int out;
+
+    if (abs(max(0)) >= tol)
+    {
+        out = 0;
+    }
+    else
+    {
+        out = 1;
+    }
+    return out;
+}
+
+
+
+// -----------------------------------------------------------------------------------------------------------------
 

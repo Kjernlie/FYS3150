@@ -7,23 +7,43 @@ using namespace arma;
 
 // Project 2
 
-int N = 2;
-mat A = mat(N, N, fill::ones);
 
 
 int main()
 {
 
-    vec test = vec(3,fill::zeros);
-    vec test2 = vec(2,fill::zeros);
-    mat test3 = mat(N,N,fill::zeros);
+//    int rho_min = 0.0;
+//    int rho_max = 10.0;
+//    int lOrbital = 0;
+//    int dim = 400;
 
-    test = max_element(A);
-    test2 = trigonometry(A,test(1),test(2));
-    test3 = make_B(A,test(1),test(2),test2(0),test(1));
-    cout << test3 << endl;
 
-    //cout << max_element(A) << endl;
+    int N = 2;
+    mat A = mat(N,N,fill::ones);
+    A(0,0) = 2;
+    A(1,1) = 2;
+
+    cout << A << endl;
+
+    mat B;
+    vec max;
+    vec trig;
+    //int tol = 1e-8;
+    int counter = 0;
+
+
+    //default tolerance value is set to 1e-8 in header file
+    while (testing(A) == 0)
+    {
+        counter++;
+        max = max_element(A);
+        trig = trigonometry(A,max(1),max(2));
+        B = make_B(A,max(1),max(2),trig(0),trig(1));
+        A = B;
+        cout << counter << endl;
+        cout << A << endl;
+    }
+
     return 0;
 }
 
