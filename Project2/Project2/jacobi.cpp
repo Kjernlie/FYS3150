@@ -54,19 +54,28 @@ vec trigonometry(mat A, int k, int l)
     vec trig = vec(2,fill::zeros);
     double tau, t;
 
-    tau = (A(l,l) - A(k,k))/(2*A(k,l));
-
-    if (tau >= 0)
+    if (A(k,l) != 0.0)
     {
-        t = 1.0/(tau + sqrt(1.0+tau*tau));
+        tau = (A(l,l) - A(k,k))/(2*A(k,l));
+
+        if (tau >= 0)
+        {
+            t = 1.0/(tau + sqrt(1.0+tau*tau));
+        }
+        else
+        {
+            t = -1.0/(-tau + sqrt(1.0+tau*tau));
+        }
+
+        trig(0) = 1.0/sqrt(1+t*t);          // cosine
+        trig(1) = t*trig(0);                // sine
     }
     else
     {
-        t = -1.0/(-tau + sqrt(1.0+tau*tau));
+        trig(0) = 1.0;                // cosine
+        trig(1) = 0.0;                // sine
     }
 
-    trig(0) = 1.0/sqrt(1+t*t);          // cosine
-    trig(1) = t*trig(0);                // sine
 
     return trig;
 }

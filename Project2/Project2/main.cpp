@@ -15,7 +15,7 @@ int main()
     // Initialize parameters
     int rho_min = 0;
     int rho_max = 10;
-    int N = 10;
+    int N = 20;
 
     // Initialize constants
     double h = double(rho_max)/N;
@@ -44,6 +44,14 @@ int main()
     //cout << A << endl;
 
 
+//    // using the built-in function
+//    vec eigval;
+//    mat eigvec;
+//    eig_sym(eigval,eigvec,A);
+//    cout << eigval(0) << endl;
+//    cout << eigval(1) << endl;
+//    cout << eigval(2) << endl;
+
     mat B;
     vec max;
     vec trig;
@@ -61,9 +69,12 @@ int main()
         A = B;
     }
 
+
+    cout << counter << endl;
     cout << A(0,0) << endl;
     cout << A(1,1) << endl;
     cout << A(2,2) << endl;
+
 
     return 0;
 }
