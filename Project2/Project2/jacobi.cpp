@@ -84,7 +84,7 @@ vec trigonometry(mat A, int k, int l)
 // ---------------------------------------------------------------------------------------------------------------------------
 // create the new matrix B
 
-void rotate(mat &A, int k, int l) {
+void rotate(mat &A, mat &R, int k, int l) {
     double tau, t, s, c;
     vec trig;
     int N = A.n_cols;               // find the mesh size
@@ -93,7 +93,7 @@ void rotate(mat &A, int k, int l) {
     c = trig(0);
     s = trig(1);
 
-    double a_kk = A(k,k); double a_ll = A(l,l); double a_ik; double a_il;
+    double a_kk = A(k,k); double a_ll = A(l,l); double a_ik; double a_il; double r_ik; double r_il;
 
     // Compute the elements of the similarity matrix
 
@@ -113,6 +113,13 @@ void rotate(mat &A, int k, int l) {
             A(i,l) = c*a_il + s*a_ik;
             A(l,i) = A(i,l);
         }
+        // new eigenvectors
+
+        r_ik = R(i,k);
+        r_il = R(i,l);
+
+        R(i,k) = c*r_ik - s*r_il;
+        R(i,l) = c*r_il + s*r_ik;
     }
 
 }
