@@ -4,9 +4,13 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.cpp \
-    jacobi.cpp
+    jacobi.cpp \
+    exb.cpp \
+    eigsym.cpp
 
 HEADERS += \
-    jacobi.h
+    jacobi.h \
+    exb.h \
+    eigsym.h
 
 LIBS += -llapack -lblas -larmadillo

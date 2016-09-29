@@ -19,6 +19,7 @@ using namespace arma;
 // ------------------------------------------------------------------------------------------------------------------
 // Find the largest non-diagonal element in A!
 
+
 vec max_element(mat A)
 {
     int N = A.n_cols;
@@ -49,8 +50,6 @@ vec max_element(mat A)
 
 vec trigonometry(mat A, int k, int l)
 {
-    // Do I have to put in a case for akl = 0?
-
     vec trig = vec(2,fill::zeros);
     double tau, t;
 
@@ -85,36 +84,40 @@ vec trigonometry(mat A, int k, int l)
 // ---------------------------------------------------------------------------------------------------------------------------
 // create the new matrix B
 
-mat make_B(mat A, int k, int l, double c, double s)
-{
+void rotate(mat &A, int k, int l) {
+    double tau, t, s, c;
+    vec trig;
     int N = A.n_cols;               // find the mesh size
-    mat B = mat(N,N,fill::zeros);   // create matrix B filled with zeros
 
-    // Compute the elements of B
+    trig = trigonometry(A, k, l);
+    c = trig(0);
+    s = trig(1);
 
-    B(k,k) = A(k,k)*c*c - 2.0*A(k,l)*c*s + A(l,l)*s*s;
-    B(l,l) = A(l,l)*c*c + 2.0*A(k,l)*c*s + A(k,k)*s*s;
+    double a_kk = A(k,k); double a_ll = A(l,l); double a_ik; double a_il;
 
-    // hard-coding non-diagonal elements
-    B(k,l) = 0.0;
-    B(l,k) = 0.0;
+    // Compute the elements of the similarity matrix
 
-    for (int i = 0; i < N; i++)
-    {
-        if (i != k && i != l)
-        {
-            B(i,i) = A(i,i);
-            B(i,k) = A(i,k)*c - A(i,l)*s;
-            B(i,l) = A(i,l)*c + A(i,k)*s;
-            B(k,i) = B(i,k);
-            B(l,i) = B(i,l);
+    A(k,k) = a_kk*c*c - 2.0*A(k,l)*c*s + a_ll*s*s;
+    A(l,l) = a_kk*s*s + 2.0*A(k,l)*c*s + a_ll*c*c;
+
+    // Hard-code non-diagonal elements
+    A(k,l) = 0;
+    A(l,k) = 0;
+
+    for ( int i = 0; i < N; i++ ) {
+        if ( i != k && i != l ) {
+            a_ik = A(i,k);
+            a_il = A(i,l);
+            A(i,k) = c*a_ik - s*a_il;
+            A(k,i) = A(i,k);
+            A(i,l) = c*a_il + s*a_ik;
+            A(l,i) = A(i,l);
         }
     }
 
-
-
-    return B;
 }
+
+
 
 // --------------------------------------------------------------------------------------------------------------
 // Function for testing if the off-diagonals are small enough!
@@ -143,13 +146,57 @@ int testing(mat B, double tol)
 
 
 // -----------------------------------------------------------------------------------------------------------------
+// Alternativ way of finding the max element
 
-// Harmonic oscillator potential
 
-//double potential(double rho)
-//{
-//    return rho*rho;
+//double max_alt(mat A, int* k, int* l, int N) {
+
+//    //int N = A.n_cols;
+
+//    double max = 0;
+
+//    for (int i = 0; i < N; i++)
+//    {
+//        for ( int j = i+1; j < N; j++)
+//        {
+//            double aij = fabs(A(i,j));
+//            if ( aij > max)
+//            {
+//                max = aij;  *k = i; *l = j;
+//            }
+//        }
+//    }
+//    return max;
 //}
 
 
-// --------------------------------------------------------------------------------------------------
+// This shit doesn't work
+
+//mat make_B(mat A, int k, int l, double c, double s)
+//{
+//    int N = A.n_cols;               // find the mesh size
+//    mat B = mat(N,N,fill::zeros);   // create matrix B filled with zeros
+
+//    // Compute the elements of B
+
+//    B(k,k) = A(k,k)*c*c - 2.0*A(k,l)*c*s + A(l,l)*s*s;
+//    B(l,l) = A(l,l)*c*c + 2.0*A(k,l)*c*s + A(k,k)*s*s;
+
+//    // hard-coding non-diagonal elements
+//    B(k,l) = 0.0;
+//    B(l,k) = 0.0;
+
+//    for (int i = 0; i < N; i++)
+//    {
+//        if (i != k && i != l)
+//        {
+//            B(i,i) = A(i,i);
+//            B(i,k) = A(i,k)*c - A(i,l)*s;
+//            B(i,l) = A(i,l)*c + A(i,k)*s;
+//            B(k,i) = B(i,k);
+//            B(l,i) = B(i,l);
+//        }
+//    }
+
+//    return B;
+//}
