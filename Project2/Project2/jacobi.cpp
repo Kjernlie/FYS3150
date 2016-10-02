@@ -85,7 +85,7 @@ vec trigonometry(mat A, int k, int l)
 // create the new matrix B
 
 void rotate(mat &A, mat &R, int k, int l) {
-    double tau, t, s, c;
+    double s, c;
     vec trig;
     int N = A.n_cols;               // find the mesh size
 

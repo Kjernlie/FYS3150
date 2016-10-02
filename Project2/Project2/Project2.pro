@@ -5,12 +5,14 @@ CONFIG -= qt
 
 SOURCES += main.cpp \
     jacobi.cpp \
-    exb.cpp \
-    eigsym.cpp
+    eigsym.cpp \
+    two_electrons.cpp \
+    schrodinger.cpp
 
 HEADERS += \
     jacobi.h \
-    exb.h \
-    eigsym.h
+    eigsym.h \
+    schrodinger.h \
+    two_electrons.h
 
 LIBS += -llapack -lblas -larmadillo

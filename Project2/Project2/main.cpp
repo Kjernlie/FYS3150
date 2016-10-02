@@ -1,8 +1,9 @@
 #include <iostream>
 #include <jacobi.h>
 #include <armadillo>
-#include <exb.h>
+#include <schrodinger.h>
 #include <eigsym.h>
+#include <two_electrons.h>
 
 using namespace std;
 using namespace arma;
@@ -13,8 +14,9 @@ using namespace arma;
 
 int main()
 {
-    exb();
+    schrodinger();
     //eigsym();
+    //two_electrons();
 
 
     return 0;

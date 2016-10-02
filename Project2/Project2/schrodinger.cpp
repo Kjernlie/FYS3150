@@ -1,13 +1,14 @@
 #include <iostream>
 #include <armadillo>
 #include "jacobi.h"
-#include "exb.h"
+#include "schrodinger.h"
 #include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace arma;
 
-void exb()
+void schrodinger()
 {
 
 //    mat BenchMrk = mat(3,3,fill::zeros);
@@ -40,24 +41,29 @@ void exb()
 
     // Initialize parameters
     double rho_min = 0;
-    double rho_max = 10;
-    int N = 100;
+    double rho_max = 30;
+    int N = 200;
 
     // Initialize constants
     double h = rho_max/ (N+1);
     double diag_const = 2.0/(h*h);
     double nondiag_const = -1.0/(h*h);
+    double omega = 0.05;
 
     // Calculate array of potential values
 
     vec v(N);
     vec rho(N);
     rho(0) = rho_min;
-    v(0) = rho(0)*rho(0);
+    //v(0) = rho(0)*rho(0);
+    //v(0) = omega*omega*rho(0)*rho(0);
+    v(0) = omega*omega*rho(0)*rho(0) + 1/rho(0);
     for (int i = 0; i<N; i++)
     {
         rho(i) = rho_min + (i+1)*h;
-        v(i) = rho(i)*rho(i);
+        //v(i) = rho(i)*rho(i);                         // one electron
+        //v(i) = omega*omega*rho(i)*rho(i);             // two electrons, without interaction
+        v(i) = omega*omega*rho(i)*rho(i) + 1/rho(i);    //two electrons, with interaction
     }
 
 
@@ -70,8 +76,6 @@ void exb()
 
     for (int i = 0; i < N; i++)
     {
-        //double rho = (i+1)*h;
-        //A(i,i) = A(i,i) + rho*rho;
         A(i,i) = A(i,i) + v(i);
     }
 
@@ -81,6 +85,9 @@ void exb()
 
     int counter = 0;
 
+    clock_t start, finish;
+    start = clock();
+
     vec max;
     while (testing(A) == 0)
     {
@@ -89,6 +96,15 @@ void exb()
         rotate(A,R,max(1),max(2));
 
     }
+
+    // -----------------------------------------------------------------------------------
+    // Time
+
+    finish = clock();
+    double timeused = (double) (finish - start)/(CLOCKS_PER_SEC );
+    cout << "Time used for a threediagonal matrix = " << timeused << " s" << endl;
+
+    // -------------------------------------------------------------------------------------
 
     //cout << R << endl;
     vec eig_vals = A.diag();
@@ -108,7 +124,7 @@ void exb()
 
    // Write to file
     ofstream myfile;
-    myfile.open("data.txt");
+    myfile.open("bs.txt");
 
     for (int i = 0; i < N; i++)
     {
