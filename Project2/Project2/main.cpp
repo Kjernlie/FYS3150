@@ -3,7 +3,6 @@
 #include <armadillo>
 #include <schrodinger.h>
 #include <eigsym.h>
-#include <two_electrons.h>
 
 using namespace std;
 using namespace arma;
@@ -16,10 +15,6 @@ int main()
 {
     schrodinger();
     //eigsym();
-    //two_electrons();
-
-
-    return 0;
 }
 
 

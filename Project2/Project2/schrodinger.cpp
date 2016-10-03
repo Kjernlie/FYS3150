@@ -11,38 +11,10 @@ using namespace arma;
 void schrodinger()
 {
 
-//    mat BenchMrk = mat(3,3,fill::zeros);
-//    BenchMrk.diag().fill(1);
-//    BenchMrk(0,1) = 2;
-//    BenchMrk(1,0) = 2;
-
-//    cout << BenchMrk << endl;
-//    mat R = mat(3,3,fill::zeros);
-//    R.diag().fill(1);
-
-//    int counter = 0;
-//    vec max;
-//    while (testing(BenchMrk) == 0)
-//    {
-//        counter++;
-//        max = max_element(BenchMrk);
-//        rotate(BenchMrk,R,max(1),max(2));
-
-//    }
-
-//    vec eig_vals = BenchMrk.diag();
-//    eig_vals = sort(eig_vals);
-
-//    cout << "first eigenvalue: " << eig_vals(0) << endl;
-//    cout << "second eigenvalue: " << eig_vals(1) << endl;
-//    cout << "third eigenvalue: " << eig_vals(2) << endl;
-//    cout << "number of similarity transformations: " << counter << endl;
-
-
     // Initialize parameters
     double rho_min = 0;
     double rho_max = 30;
-    int N = 200;
+    int N = 100;
 
     // Initialize constants
     double h = rho_max/ (N+1);

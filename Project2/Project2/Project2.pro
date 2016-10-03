@@ -6,13 +6,11 @@ CONFIG -= qt
 SOURCES += main.cpp \
     jacobi.cpp \
     eigsym.cpp \
-    two_electrons.cpp \
     schrodinger.cpp
 
 HEADERS += \
     jacobi.h \
     eigsym.h \
-    schrodinger.h \
-    two_electrons.h
+    schrodinger.h
 
 LIBS += -llapack -lblas -larmadillo
