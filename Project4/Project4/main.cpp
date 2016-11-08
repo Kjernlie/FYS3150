@@ -7,13 +7,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-//    int N_spins = 2;
-//    int MC_cycles = 1e5;
-//    double initial_temp = 0.0;
-//    double final_temp = 1.0;
-//    double temp_step = 0.1;
 
-    // mpi stufff -------------------------
     int NProcesses;
     int rankProcess;
     string filename;
@@ -51,13 +45,13 @@ int main(int argc, char* argv[])
 
 // ----------------------------------------
 
-    System test;
+    System test(N_spins);
 
     double  time_start, time_end, total_time;
     time_start = MPI_Wtime();
 
 
-    test.RunSystem(filename, MC_cycles, N_spins, initial_temp, final_temp, temp_step, rankProcess, NProcesses);
+    test.RunSystem(filename, MC_cycles, initial_temp, final_temp, temp_step, rankProcess, NProcesses);
 
 
     time_end = MPI_Wtime();
@@ -68,7 +62,6 @@ int main(int argc, char* argv[])
     }
 
     MPI_Finalize ();
-    //test.RunSystem(filename, MC_cycles, N_spins, initial_temp, final_temp, temp_step);
 
 
 

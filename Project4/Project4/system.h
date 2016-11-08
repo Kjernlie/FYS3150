@@ -6,14 +6,19 @@
 class System
 {
 public:
-    System();
-    void InitiliazeLattice(int N_spins, arma::mat &SpinMatrix, double& Energy, double& MagneticMoment);
-    void MetropolisSampling(int N_spins, int MC_cycles, double Temperature, arma::vec &ExpectationValues);
-    void RunSystem(std::string filename, int MC_cycles, int N_spins, double initial_temp, double final_temp, double temp_step, int rankProcess, int NProcesses);
+    System(int N_spins);
+    void InitiliazeLattice(double& Energy, double& MagneticMoment);
+    void MetropolisSampling(int MC_cycles, double Temperature, arma::vec &ExpectationValues);
+    void RunSystem(std::string filename, int MC_cycles, double initial_temp, double final_temp, double temp_step, int rankProcess, int NProcesses);
     inline int periodic(int i, int limit, int add);
-    void output(std::string filename, int N_spins, int MC_cycles, double temperature, arma::vec ExpectationValues);
-    int calculateEnergy(arma::mat spinMatrix, int N_spins);
+    void output(std::string filename, int MC_cycles, double temperature, arma::vec expectationValues);
+    //int calculateEnergy(int N_spins);
+    void intermediate_output(std::string filename, int MC_cycles, double temp, arma::vec expectationValues);
+    //int calculate_deltaE(int ix, int iy);
 
 private:
-    std::ofstream m_file;
+    arma::mat m_spinMatrix;
+    int m_N_spins;
+    std::ofstream m_file1;
+    std::ofstream m_file2;
 };
