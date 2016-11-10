@@ -7,14 +7,16 @@
 #include <armadillo>
 #include <random>
 #include <string>
+#include <sstream>
 
 using namespace std;
 using namespace arma;
 
 System::System(int N_spins):
     m_N_spins(N_spins),
-    m_spinMatrix(zeros<mat>(N_spins,N_spins))
-    //  m_temp(temp)
+    m_spinMatrix(zeros<mat>(N_spins,N_spins)),
+    m_accepted_states(0)
+
 {
 
 }
@@ -30,10 +32,12 @@ void System::RunSystem(string filename, int MC_cycles, double initial_temp, doub
     for (double temp = initial_temp; temp <= final_temp; temp+=temp_step)
     {
 
+        //m_accepted_states = 0;
+
         vec local_expectation_vals = zeros<mat>(5);
 
         // start Monte Carlo computation and get local expectation values
-        MetropolisSampling(MC_cycles, temp, local_expectation_vals);
+        MetropolisSampling(MC_cycles, temp, local_expectation_vals, rankProcess);
 
 
         // Find the total average
@@ -55,12 +59,26 @@ void System::RunSystem(string filename, int MC_cycles, double initial_temp, doub
 
 void System::InitiliazeLattice(double& energy, double& magneticMoment)
 {
-    // setup spin matrix and initial magnetization
-    for(int x = 0; x < m_N_spins; x++){
-        for(int y = 0; y < m_N_spins; y++){
-            m_spinMatrix(x,y) = 1.0; // Spin orientation for the ground state
-            magneticMoment += (double) m_spinMatrix(x,y);
+    // Initialize the seed and calle the Mersenne algorithm
+    random_device rd;
+    mt19937_64 gen(rd());
 
+    // Setup the uniform distribution for x in [0,1]
+    uniform_real_distribution<double> distribution(0.0,1.0);
+
+    // setup spin matrix and initial magnetization
+//    for(int x = 0; x < m_N_spins; x++){
+//        for(int y = 0; y < m_N_spins; y++){
+//            m_spinMatrix(x,y) = 1.0; // Spin orientation for the ground state
+//            magneticMoment += (double) m_spinMatrix(x,y);
+
+//        }
+//    }
+
+    for (int x = 0; x < m_N_spins; x++){
+        for (int y = 0; y < m_N_spins; y++){
+            m_spinMatrix(x,y) = distribution(gen) < 0.5 ? 1 : -1;
+            magneticMoment += (double) m_spinMatrix(x,y);
         }
     }
 
@@ -75,11 +93,12 @@ void System::InitiliazeLattice(double& energy, double& magneticMoment)
 }
 
 
+
 // --------------------------------------------------------------------------------------------------
 
 
 
-void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValues)
+void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValues, int rankProcess)
 {
 
     // Initialize the seed and calle the Mersenne algorithm
@@ -93,6 +112,7 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
     // Initialize energy and magnetization
     double energy = 0.;
     double magneticMoment = 0.;
+    m_accepted_states = 0;
 
     // Initialize array for expectation values
     InitiliazeLattice(energy, magneticMoment);
@@ -112,11 +132,15 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
                 int ix = (int) (distribution(gen)*(double)m_N_spins);
                 int iy = (int) (distribution(gen)*(double)m_N_spins);
 
+
+
                 int delta_E = 2*m_spinMatrix(ix,iy)*
                         (m_spinMatrix(ix,periodic(iy,m_N_spins,-1)) +
                          m_spinMatrix(periodic(ix,m_N_spins,-1),iy) +
                          m_spinMatrix(ix,periodic(iy,m_N_spins,1)) +
                          m_spinMatrix(periodic(ix,m_N_spins,1),iy));
+
+
 
 //                int delta_E = calculate_deltaE(m_spinMatrix, ix, iy, m_N_spins);
 
@@ -128,6 +152,7 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
                     m_spinMatrix(ix,iy) *= -1.0; // flip one spin and accept new spin config
                     magneticMoment += (double) 2*m_spinMatrix(ix,iy);
                     energy += (double) delta_E;
+                    m_accepted_states++;
                     //energyOld = energyNew;
                 }
             }
@@ -139,7 +164,9 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
         expectationValues(3) += magneticMoment*magneticMoment;
         expectationValues(4) += fabs(magneticMoment);
 
-        if (cycles != 0 && cycles % 100 == 0) intermediate_output("works.dat", cycles, temp, expectationValues);
+//        if (cycles != 0 && cycles % 100 == 0){
+//            intermediate_output(cycles, temp, expectationValues, MC_cycles);
+//        }
 
     }
 }
@@ -172,16 +199,27 @@ void System::output(string filename, int MC_cycles, double temp, vec expectation
     double M_expectationValues = expectationValues(2)*norm;  // Magnetic moments
     double M2_expectationValues = expectationValues(3)*norm;   //  Magnetic moments squared
     double Mabs_expectationValues = expectationValues(4)*norm;  // Absolute value magnetic moment
+
     // all expectation values are per spin, divide by 1/NSpins/NSpins
     double Evariance = (E2_expectationValues- E_expectationValues*E_expectationValues)/m_N_spins/m_N_spins;
     double Mvariance = (M2_expectationValues - M_expectationValues*M_expectationValues)/m_N_spins/m_N_spins;
+
+    double energyPrSpin = E_expectationValues/m_N_spins/m_N_spins;
+    double specHeatPrSpin = Evariance/temp/temp;
+    double magMomPrSpin = M_expectationValues/m_N_spins/m_N_spins;
+    double susceptPrSpin = Mvariance/temp;
+    double absMagMomPrSpin = Mabs_expectationValues/m_N_spins/m_N_spins;
+
     m_file1 << setiosflags(ios::showpoint | ios::uppercase);
+
     m_file1 << setw(15) << setprecision(8) << temp;
-    m_file1 << setw(15) << setprecision(8) << E_expectationValues/m_N_spins/m_N_spins;   // energy
-    m_file1 << setw(15) << setprecision(8) << Evariance/temp/temp;     // Specific Heat
-    m_file1 << setw(15) << setprecision(8) << M_expectationValues/m_N_spins/m_N_spins;   // Magnetic moments
-    m_file1 << setw(15) << setprecision(8) << Mvariance/temp;                 // Susceptibility
-    m_file1 << setw(15) << setprecision(8) << Mabs_expectationValues/m_N_spins/m_N_spins;// Absolute magnetic moment
+    m_file1 << setw(15) << setprecision(8) << energyPrSpin;
+    m_file1 << setw(15) << setprecision(8) << specHeatPrSpin;
+    //m_file1 << setw(15) << setprecision(8) << magMomPrSpin;
+    m_file1 << setw(15) << setprecision(8) << susceptPrSpin;
+    m_file1 << setw(15) << setprecision(8) << absMagMomPrSpin;
+    m_file1 << setw(15) << setprecision(8) << m_accepted_states/((double) MC_cycles*m_N_spins*m_N_spins);
+    m_file1 << "\n";
 
 }
 
@@ -191,8 +229,12 @@ void System::output(string filename, int MC_cycles, double temp, vec expectation
 
 
 
-void System::intermediate_output(string filename, int MC_cycles, double temp, vec expectationValues)
+void System::intermediate_output(int cycles, double temp, vec expectationValues, int MC_cycles)
 {
+    ostringstream oss;
+    oss << "intermediate_" << m_N_spins << "L_" << MC_cycles << "cycles.dat";
+    string filename = oss.str();
+
     if(!m_file2.good()) {
         m_file2.open(filename.c_str(), ofstream::out);
         if(!m_file2.good()) {
@@ -201,23 +243,43 @@ void System::intermediate_output(string filename, int MC_cycles, double temp, ve
         }
     }
 
-    double norm = 1.0/((double) (MC_cycles));  // divided by  number of cycles
+    double norm = 1.0/((double) (cycles));  // divided by  number of cycles
     double E_expectationValues = expectationValues(0)*norm; // energy
-    double E2_expectationValues = expectationValues(1)*norm;  // energy squared
-    double M_expectationValues = expectationValues(2)*norm;  // Magnetic moments
-    double M2_expectationValues = expectationValues(3)*norm;   //  Magnetic moments squared
     double Mabs_expectationValues = expectationValues(4)*norm;  // Absolute value magnetic moment
+
     // all expectation values are per spin, divide by 1/NSpins/NSpins
-    double Evariance = (E2_expectationValues- E_expectationValues*E_expectationValues)/m_N_spins/m_N_spins;
-    double Mvariance = (M2_expectationValues - M_expectationValues*M_expectationValues)/m_N_spins/m_N_spins;
+
+    double energyPrSpin = E_expectationValues/m_N_spins/m_N_spins;
+    double absMagMomPrSpin = Mabs_expectationValues/m_N_spins/m_N_spins;
+
     m_file2 << setiosflags(ios::showpoint | ios::uppercase);
     m_file2 << setw(15) << setprecision(8) << temp;
-    m_file2 << setw(15) << setprecision(8) << E_expectationValues/m_N_spins/m_N_spins;   // energy
-    m_file2 << setw(15) << setprecision(8) << Evariance/temp/temp;     // Specific Heat
-    m_file2 << setw(15) << setprecision(8) << M_expectationValues/m_N_spins/m_N_spins;   // Magnetic moments
-    m_file2 << setw(15) << setprecision(8) << Mvariance/temp;                 // Susceptibility
-    m_file2 << setw(15) << setprecision(8) << Mabs_expectationValues/m_N_spins/m_N_spins;// Absolute magnetic moment
+    m_file2 << setw(15) << setprecision(8) << energyPrSpin;
+    m_file2 << setw(15) << setprecision(8) << absMagMomPrSpin;
+    m_file2 << setw(15) << setprecision(8) << m_accepted_states;
+    m_file2 << "\n";
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //int System::calculate_deltaE(int ix, int iy, int N_spins){
 
