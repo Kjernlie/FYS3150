@@ -15,7 +15,9 @@ using namespace arma;
 System::System(int N_spins):
     m_N_spins(N_spins),
     m_spinMatrix(zeros<mat>(N_spins,N_spins)),
-    m_accepted_states(0)
+    m_accepted_states(0),
+    m_energyCounter(zeros<vec>(4*N_spins*N_spins+1)),
+    m_tol(1)
 
 {
 
@@ -37,7 +39,7 @@ void System::RunSystem(string filename, int MC_cycles, double initial_temp, doub
         vec local_expectation_vals = zeros<mat>(5);
 
         // start Monte Carlo computation and get local expectation values
-        MetropolisSampling(MC_cycles, temp, local_expectation_vals, rankProcess);
+        MetropolisSampling(MC_cycles, temp, local_expectation_vals, rankProcess, NProcesses);
 
 
         // Find the total average
@@ -46,7 +48,8 @@ void System::RunSystem(string filename, int MC_cycles, double initial_temp, doub
             MPI_Reduce(&local_expectation_vals[i], &total_expectation_vals[i], 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         }
 
-        if (rankProcess == 0) output(filename, MC_cycles*NProcesses, temp, total_expectation_vals);
+        if (rankProcess == 0) output(filename, m_file1, MC_cycles*NProcesses, temp, total_expectation_vals);
+        if (rankProcess == 0) probability_output(temp);
 
 
     }
@@ -67,20 +70,20 @@ void System::InitiliazeLattice(double& energy, double& magneticMoment)
     uniform_real_distribution<double> distribution(0.0,1.0);
 
     // setup spin matrix and initial magnetization
-//    for(int x = 0; x < m_N_spins; x++){
-//        for(int y = 0; y < m_N_spins; y++){
-//            m_spinMatrix(x,y) = 1.0; // Spin orientation for the ground state
-//            magneticMoment += (double) m_spinMatrix(x,y);
-
-//        }
-//    }
-
-    for (int x = 0; x < m_N_spins; x++){
-        for (int y = 0; y < m_N_spins; y++){
-            m_spinMatrix(x,y) = distribution(gen) < 0.5 ? 1 : -1;
+    for(int x = 0; x < m_N_spins; x++){
+        for(int y = 0; y < m_N_spins; y++){
+            m_spinMatrix(x,y) = 1.0; // Spin orientation for the ground state
             magneticMoment += (double) m_spinMatrix(x,y);
+
         }
     }
+
+//    for (int x = 0; x < m_N_spins; x++){
+//        for (int y = 0; y < m_N_spins; y++){
+//            m_spinMatrix(x,y) = distribution(gen) < 0.5 ? 1 : -1;
+//            magneticMoment += (double) m_spinMatrix(x,y);
+//        }
+//    }
 
     // setup initial energy
     for(int x = 0; x < m_N_spins; x++){
@@ -89,7 +92,15 @@ void System::InitiliazeLattice(double& energy, double& magneticMoment)
                     (m_spinMatrix(periodic(x,m_N_spins,-1),y) +
                      m_spinMatrix(x,periodic(y,m_N_spins,-1)));
         }
+
     }
+
+//    expectationValues(0) += energy;
+//    expectationValues(1) += energy*energy;
+//    expectationValues(2) += magneticMoment;
+//    expectationValues(3) += magneticMoment*magneticMoment;
+//    expectationValues(4) += fabs(magneticMoment);
+
 }
 
 
@@ -98,7 +109,7 @@ void System::InitiliazeLattice(double& energy, double& magneticMoment)
 
 
 
-void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValues, int rankProcess)
+void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValues, int rankProcess, int NProcesses)
 {
 
     // Initialize the seed and calle the Mersenne algorithm
@@ -113,6 +124,8 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
     double energy = 0.;
     double magneticMoment = 0.;
     m_accepted_states = 0;
+    bool burning = 0;
+    double energyOld = 1000;
 
     // Initialize array for expectation values
     InitiliazeLattice(energy, magneticMoment);
@@ -164,9 +177,23 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
         expectationValues(3) += magneticMoment*magneticMoment;
         expectationValues(4) += fabs(magneticMoment);
 
-//        if (cycles != 0 && cycles % 100 == 0){
-//            intermediate_output(cycles, temp, expectationValues, MC_cycles);
+//        if (abs(expectationValues(0)-energyOld)<m_tol){
+//            burning = 1;
+//            cout << cycles << endl;
 //        }
+
+
+//        if (cycles == 10 || cycles == 500 || cycles == 1000 || cycles == 10000 || cycles == 40000 || cycles == 80000){
+//            cout << abs(expectationValues(0)-energyOld) << endl;
+//        }
+
+//        energyOld = expectationValues(0);
+
+        if (cycles > MC_cycles*0.1) m_energyCounter(energy + m_N_spins*m_N_spins*2) += 1;
+
+        if (cycles != 0 && cycles % 100 == 0){
+            intermediate_output(cycles*NProcesses, temp, expectationValues, MC_cycles, rankProcess);
+        }
 
     }
 }
@@ -183,11 +210,11 @@ inline int System::periodic(int i, int limit, int add){
 // --------------------------------------------------------------------------------------------------
 
 
-void System::output(string filename, int MC_cycles, double temp, vec expectationValues)
+void System::output(string filename, ofstream &file, int MC_cycles, double temp, vec expectationValues)
 {
-    if(!m_file1.good()) {
-        m_file1.open(filename.c_str(), ofstream::out);
-        if(!m_file1.good()) {
+    if(!file.good()) {
+        file.open(filename.c_str(), ofstream::out);
+        if(!file.good()) {
             cout << "Error opening file " << filename << ". Aborting!" << endl;
             terminate();
         }
@@ -210,16 +237,16 @@ void System::output(string filename, int MC_cycles, double temp, vec expectation
     double susceptPrSpin = Mvariance/temp;
     double absMagMomPrSpin = Mabs_expectationValues/m_N_spins/m_N_spins;
 
-    m_file1 << setiosflags(ios::showpoint | ios::uppercase);
+    file << setiosflags(ios::showpoint | ios::uppercase);
 
-    m_file1 << setw(15) << setprecision(8) << temp;
-    m_file1 << setw(15) << setprecision(8) << energyPrSpin;
-    m_file1 << setw(15) << setprecision(8) << specHeatPrSpin;
+    file << setw(15) << setprecision(8) << temp;
+    file << setw(15) << setprecision(8) << energyPrSpin;
+    file << setw(15) << setprecision(8) << specHeatPrSpin;
     //m_file1 << setw(15) << setprecision(8) << magMomPrSpin;
-    m_file1 << setw(15) << setprecision(8) << susceptPrSpin;
-    m_file1 << setw(15) << setprecision(8) << absMagMomPrSpin;
-    m_file1 << setw(15) << setprecision(8) << m_accepted_states/((double) MC_cycles*m_N_spins*m_N_spins);
-    m_file1 << "\n";
+    file << setw(15) << setprecision(8) << susceptPrSpin;
+    file << setw(15) << setprecision(8) << absMagMomPrSpin;
+    file << setw(15) << setprecision(8) << m_accepted_states/((double) MC_cycles*m_N_spins*m_N_spins);
+    file << "\n";
 
 }
 
@@ -229,38 +256,77 @@ void System::output(string filename, int MC_cycles, double temp, vec expectation
 
 
 
-void System::intermediate_output(int cycles, double temp, vec expectationValues, int MC_cycles)
+void System::intermediate_output(int cycles, double temp, vec local_expectation_vals, int MC_cycles, int rankProcess)
 {
+
+    vec total_expectation_vals = zeros<mat>(5);
+    for (int i=0; i<5; i++){
+        MPI_Reduce(&local_expectation_vals[i], &total_expectation_vals[i], 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+
     ostringstream oss;
     oss << "intermediate_" << m_N_spins << "L_" << MC_cycles << "cycles.dat";
     string filename = oss.str();
 
-    if(!m_file2.good()) {
-        m_file2.open(filename.c_str(), ofstream::out);
-        if(!m_file2.good()) {
+
+    if (rankProcess == 0) output(filename, m_file2, cycles, temp, total_expectation_vals);
+
+//    if (rankProcess == 0){
+//        ostringstream oss;
+//        oss << "intermediate_" << m_N_spins << "L_" << MC_cycles << "cycles.dat";
+//        string filename = oss.str();
+
+
+//        if(!m_file2.good()) {
+//            m_file2.open(filename.c_str(), ofstream::out);
+//            if(!m_file2.good()) {
+//                cout << "Error opening file " << filename << ". Aborting!" << endl;
+//                terminate();
+//            }
+//        }
+//    }
+
+
+//    double norm = 1.0/((double) (cycles));  // divided by  number of cycles
+//    double E_expectationValues = expectationValues(0)*norm; // energy
+//    double E2_expectationValues = expectationValues(1)*norm;  // energy squared
+//    double Mabs_expectationValues = expectationValues(4)*norm;  // Absolute value magnetic moment
+
+//    // all expectation values are per spin, divide by 1/NSpins/NSpins
+//    double Evariance = (E2_expectationValues- E_expectationValues*E_expectationValues)/m_N_spins/m_N_spins;
+
+//    double energyPrSpin = E_expectationValues/m_N_spins/m_N_spins;
+//    double absMagMomPrSpin = Mabs_expectationValues/m_N_spins/m_N_spins;
+
+//    m_file2 << setiosflags(ios::showpoint | ios::uppercase);
+//    m_file2 << setw(15) << setprecision(8) << temp;
+//    m_file2 << setw(15) << setprecision(8) << energyPrSpin;
+//    m_file2 << setw(15) << setprecision(8) << absMagMomPrSpin;
+//    m_file2 << setw(15) << setprecision(8) << Evariance;
+//    m_file2 << setw(15) << setprecision(8) << m_accepted_states;
+//    m_file2 << "\n";
+
+}
+
+
+void System::probability_output(double temp)
+{
+    string filename = "probabilities.dat";
+
+    if(!m_file3.good()) {
+        m_file3.open(filename.c_str(), ofstream::out);
+        if(!m_file3.good()) {
             cout << "Error opening file " << filename << ". Aborting!" << endl;
             terminate();
         }
     }
 
-    double norm = 1.0/((double) (cycles));  // divided by  number of cycles
-    double E_expectationValues = expectationValues(0)*norm; // energy
-    double Mabs_expectationValues = expectationValues(4)*norm;  // Absolute value magnetic moment
-
-    // all expectation values are per spin, divide by 1/NSpins/NSpins
-
-    double energyPrSpin = E_expectationValues/m_N_spins/m_N_spins;
-    double absMagMomPrSpin = Mabs_expectationValues/m_N_spins/m_N_spins;
-
-    m_file2 << setiosflags(ios::showpoint | ios::uppercase);
-    m_file2 << setw(15) << setprecision(8) << temp;
-    m_file2 << setw(15) << setprecision(8) << energyPrSpin;
-    m_file2 << setw(15) << setprecision(8) << absMagMomPrSpin;
-    m_file2 << setw(15) << setprecision(8) << m_accepted_states;
-    m_file2 << "\n";
-
+    //m_file3 << temp << endl;
+    //m_file3 << setiosflags(ios::showpoint | ios::uppercase);
+    //m_file3 << setw(15) << setprecision(8) << m_energyCounter << endl;
+    m_file3 << m_energyCounter << endl;
+    //m_file3 << "\n";
 }
-
 
 
 
