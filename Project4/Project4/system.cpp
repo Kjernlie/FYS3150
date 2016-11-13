@@ -16,7 +16,6 @@ System::System(int N_spins):
     m_N_spins(N_spins),
     m_spinMatrix(zeros<mat>(N_spins,N_spins)),
     m_accepted_states(0),
-    m_energyCounter(zeros<vec>(4*N_spins*N_spins+1)),
     m_tol(1)
 
 {
@@ -49,7 +48,6 @@ void System::RunSystem(string filename, int MC_cycles, double initial_temp, doub
         }
 
         if (rankProcess == 0) output(filename, m_file1, MC_cycles*NProcesses, temp, total_expectation_vals);
-        if (rankProcess == 0) probability_output(temp);
 
 
     }
@@ -77,6 +75,8 @@ void System::InitiliazeLattice(double& energy, double& magneticMoment)
 
         }
     }
+
+// Random init
 
 //    for (int x = 0; x < m_N_spins; x++){
 //        for (int y = 0; y < m_N_spins; y++){
@@ -124,8 +124,8 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
     double energy = 0.;
     double magneticMoment = 0.;
     m_accepted_states = 0;
-    bool burning = 0;
-    double energyOld = 1000;
+//    bool burning = 0;
+//    double energyOld = 1000;
 
     // Initialize array for expectation values
     InitiliazeLattice(energy, magneticMoment);
@@ -177,21 +177,8 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
         expectationValues(3) += magneticMoment*magneticMoment;
         expectationValues(4) += fabs(magneticMoment);
 
-//        if (abs(expectationValues(0)-energyOld)<m_tol){
-//            burning = 1;
-//            cout << cycles << endl;
-//        }
 
-
-//        if (cycles == 10 || cycles == 500 || cycles == 1000 || cycles == 10000 || cycles == 40000 || cycles == 80000){
-//            cout << abs(expectationValues(0)-energyOld) << endl;
-//        }
-
-//        energyOld = expectationValues(0);
-
-        if (cycles > MC_cycles*0.1) m_energyCounter(energy + m_N_spins*m_N_spins*2) += 1;
-
-        if (cycles != 0 && cycles % 100 == 0){
+        if (cycles >= 10000 && cycles % 100 == 0){
             intermediate_output(cycles*NProcesses, temp, expectationValues, MC_cycles, rankProcess);
         }
 
@@ -268,64 +255,7 @@ void System::intermediate_output(int cycles, double temp, vec local_expectation_
     oss << "intermediate_" << m_N_spins << "L_" << MC_cycles << "cycles.dat";
     string filename = oss.str();
 
-
     if (rankProcess == 0) output(filename, m_file2, cycles, temp, total_expectation_vals);
-
-//    if (rankProcess == 0){
-//        ostringstream oss;
-//        oss << "intermediate_" << m_N_spins << "L_" << MC_cycles << "cycles.dat";
-//        string filename = oss.str();
-
-
-//        if(!m_file2.good()) {
-//            m_file2.open(filename.c_str(), ofstream::out);
-//            if(!m_file2.good()) {
-//                cout << "Error opening file " << filename << ". Aborting!" << endl;
-//                terminate();
-//            }
-//        }
-//    }
-
-
-//    double norm = 1.0/((double) (cycles));  // divided by  number of cycles
-//    double E_expectationValues = expectationValues(0)*norm; // energy
-//    double E2_expectationValues = expectationValues(1)*norm;  // energy squared
-//    double Mabs_expectationValues = expectationValues(4)*norm;  // Absolute value magnetic moment
-
-//    // all expectation values are per spin, divide by 1/NSpins/NSpins
-//    double Evariance = (E2_expectationValues- E_expectationValues*E_expectationValues)/m_N_spins/m_N_spins;
-
-//    double energyPrSpin = E_expectationValues/m_N_spins/m_N_spins;
-//    double absMagMomPrSpin = Mabs_expectationValues/m_N_spins/m_N_spins;
-
-//    m_file2 << setiosflags(ios::showpoint | ios::uppercase);
-//    m_file2 << setw(15) << setprecision(8) << temp;
-//    m_file2 << setw(15) << setprecision(8) << energyPrSpin;
-//    m_file2 << setw(15) << setprecision(8) << absMagMomPrSpin;
-//    m_file2 << setw(15) << setprecision(8) << Evariance;
-//    m_file2 << setw(15) << setprecision(8) << m_accepted_states;
-//    m_file2 << "\n";
-
-}
-
-
-void System::probability_output(double temp)
-{
-    string filename = "probabilities.dat";
-
-    if(!m_file3.good()) {
-        m_file3.open(filename.c_str(), ofstream::out);
-        if(!m_file3.good()) {
-            cout << "Error opening file " << filename << ". Aborting!" << endl;
-            terminate();
-        }
-    }
-
-    //m_file3 << temp << endl;
-    //m_file3 << setiosflags(ios::showpoint | ios::uppercase);
-    //m_file3 << setw(15) << setprecision(8) << m_energyCounter << endl;
-    m_file3 << m_energyCounter << endl;
-    //m_file3 << "\n";
 }
 
 
