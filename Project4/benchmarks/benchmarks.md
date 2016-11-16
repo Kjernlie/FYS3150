@@ -12,7 +12,7 @@ mpirun -n 2 ./main.x benchmarks1.dat 2 250000 2.3 2.4 0.1
 
 Here, the different inputs have the following meaning:
 
-mpirun -n <Number of nodes to run on> ./<executable> <file, which you want to write the values to> <lattice size> <number of Monte Carlo samples to run on one node> <Initial temperature> <Final temperature> <temperature step> 
+mpirun -n (Number of nodes to run on) ./(executable) (file, which you want to write the values to) (lattice size) (number of Monte Carlo samples to run on one node) (Initial temperature) (Final temperature) (temperature step) 
 
 
 If you open benchmarks1.dat, it should contain numbers simular to 
