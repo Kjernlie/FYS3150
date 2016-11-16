@@ -68,22 +68,21 @@ void System::InitiliazeLattice(double& energy, double& magneticMoment)
     uniform_real_distribution<double> distribution(0.0,1.0);
 
     // setup spin matrix and initial magnetization
-    for(int x = 0; x < m_N_spins; x++){
-        for(int y = 0; y < m_N_spins; y++){
-            m_spinMatrix(x,y) = 1.0; // Spin orientation for the ground state
-            magneticMoment += (double) m_spinMatrix(x,y);
-
-        }
-    }
-
-// Random init
-
-//    for (int x = 0; x < m_N_spins; x++){
-//        for (int y = 0; y < m_N_spins; y++){
-//            m_spinMatrix(x,y) = distribution(gen) < 0.5 ? 1 : -1;
+//    for(int x = 0; x < m_N_spins; x++){
+//        for(int y = 0; y < m_N_spins; y++){
+//            m_spinMatrix(x,y) = 1.0; // Spin orientation for the ground state
 //            magneticMoment += (double) m_spinMatrix(x,y);
 //        }
 //    }
+
+// Random init
+
+    for (int x = 0; x < m_N_spins; x++){
+        for (int y = 0; y < m_N_spins; y++){
+            m_spinMatrix(x,y) = distribution(gen) < 0.5 ? 1 : -1;
+            magneticMoment += (double) m_spinMatrix(x,y);
+        }
+    }
 
     // setup initial energy
     for(int x = 0; x < m_N_spins; x++){
@@ -92,7 +91,6 @@ void System::InitiliazeLattice(double& energy, double& magneticMoment)
                     (m_spinMatrix(periodic(x,m_N_spins,-1),y) +
                      m_spinMatrix(x,periodic(y,m_N_spins,-1)));
         }
-
     }
 
 //    expectationValues(0) += energy;
@@ -178,7 +176,7 @@ void System::MetropolisSampling(int MC_cycles, double temp, vec &expectationValu
         expectationValues(4) += fabs(magneticMoment);
 
 
-        if (cycles >= 10000 && cycles % 100 == 0){
+        if (cycles >= 50000 && cycles % 100 == 0){
             intermediate_output(cycles*NProcesses, temp, expectationValues, MC_cycles, rankProcess);
         }
 
@@ -217,11 +215,15 @@ void System::output(string filename, ofstream &file, int MC_cycles, double temp,
     // all expectation values are per spin, divide by 1/NSpins/NSpins
     double Evariance = (E2_expectationValues- E_expectationValues*E_expectationValues)/m_N_spins/m_N_spins;
     double Mvariance = (M2_expectationValues - M_expectationValues*M_expectationValues)/m_N_spins/m_N_spins;
+    double Mabs_variance = (M2_expectationValues - Mabs_expectationValues*Mabs_expectationValues)/m_N_spins/m_N_spins;
+    double E_variance_tot = E2_expectationValues- E_expectationValues*E_expectationValues;
 
     double energyPrSpin = E_expectationValues/m_N_spins/m_N_spins;
+    double energySystem = E_expectationValues;
     double specHeatPrSpin = Evariance/temp/temp;
     double magMomPrSpin = M_expectationValues/m_N_spins/m_N_spins;
-    double susceptPrSpin = Mvariance/temp;
+    //double susceptPrSpin = Mvariance/temp;
+    double susceptPrSpin = Mabs_variance/temp;
     double absMagMomPrSpin = Mabs_expectationValues/m_N_spins/m_N_spins;
 
     file << setiosflags(ios::showpoint | ios::uppercase);
@@ -233,6 +235,8 @@ void System::output(string filename, ofstream &file, int MC_cycles, double temp,
     file << setw(15) << setprecision(8) << susceptPrSpin;
     file << setw(15) << setprecision(8) << absMagMomPrSpin;
     file << setw(15) << setprecision(8) << m_accepted_states/((double) MC_cycles*m_N_spins*m_N_spins);
+    file << setw(15) << setprecision(8) << E_variance_tot;
+    file << setw(15) << setprecision(8) << energySystem;
     file << "\n";
 
 }
