@@ -1,5 +1,5 @@
-#ifndef VMC_H
-#define VMC_H
+#pragma once
+
 #include <armadillo>
 
 using namespace arma;
@@ -8,7 +8,9 @@ class VMC
 {
 public:
     VMC();
-    runMCIntegration;
+    void runMCIntegration();
+
+
 
 private:
     double waveFunc(const mat &r);
@@ -17,11 +19,8 @@ private:
     int omega;
     double stepLength;
     int nParticles;
-    long idum;
     double alpha;
     int nCycles;
     mat rOld;
     mat rNew;
 };
-
-#endif // VMC_H
