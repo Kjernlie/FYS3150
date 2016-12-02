@@ -13,14 +13,16 @@ public:
 
 
 private:
-    double waveFunc(const mat &r);
-    double localEnergy(const mat &r);
+    double waveFunc( mat &r);
+    double localEnergy( mat &r);
+    double laplacian( mat &r);
     int nDimensions;
-    int omega;
+    double omega;
     double stepLength;
     int nParticles;
     double alpha;
     int nCycles;
     mat rOld;
     mat rNew;
+    double accepted_states;
 };

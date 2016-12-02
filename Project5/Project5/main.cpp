@@ -1,6 +1,5 @@
 #include <iostream>
 #include "vmc.h"
-double ran2(long *);
 
 using namespace std;
 
