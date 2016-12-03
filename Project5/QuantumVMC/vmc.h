@@ -15,6 +15,7 @@ public:
 
 private:
     double waveFunc(const mat &r);
+    double waveFunc2(const mat &r);
     double localEnergy(const mat &r);
     void acceptanceTest(int cycles);
     int nDimensions;
@@ -30,4 +31,5 @@ private:
     double h2;
     int perturbation;
     std::ofstream m_file;
+    double beta;
 };
