@@ -14,11 +14,11 @@ using namespace std;
 
 VMC::VMC() :
     nDimensions(3),
-    omega(1.0),
-    stepLength(1.0),
+    omega(0.01),
+    stepLength(10.0),
     nParticles(2),
-    alpha(0.95),
-    nCycles(1000000),
+    alpha(1.0),
+    nCycles(2500000),
     accepted_states(0),
     h(0.00001),
     h2(1./double(h*h)),
@@ -38,9 +38,10 @@ void VMC::runMCIntegration()
     m_file.open(filename);
 
 
-//    for (alpha = 1.0; alpha < 1.1; alpha += 0.1)
+//    for (alpha = 0.2; alpha <= 1.2; alpha += 0.1)
 //    {
 
+    optimalAlpha();
     //optimalAlphaBeta();
 
     accepted_states = 0;
@@ -49,7 +50,8 @@ void VMC::runMCIntegration()
     rNew = zeros<mat>(nParticles, nDimensions);
     double energySum = 0;
     double energySum2 = 0;
-    MCIntegration(energySum, energySum2);
+    double meanDistance = 0;
+    MCIntegration(energySum, energySum2, meanDistance);
 
     double energy = energySum/(nCycles * nParticles);
     double energy2 = energySum2/(nCycles * nParticles);
@@ -57,16 +59,17 @@ void VMC::runMCIntegration()
     cout << "Energy: " << energy << endl;
     cout << "Variance: " << variance << endl;
     cout << "Acceptance rate: " << accepted_states/ (nCycles*nParticles) << endl;
-    cout << "step length: " << stepLength << endl;
+    cout << "Step length: " << stepLength << endl;
+    cout << "Mean distance: " << meanDistance/(nCycles) << endl;
 
-    writeToFile(energy, variance);
-//    }
+    //writeToFile(energy, variance);
+    //}
 
 }
 
 
 
-void VMC::MCIntegration(double& energySum, double& energySum2)
+void VMC::MCIntegration(double& energySum, double& energySum2, double &meanDistance)
 {
     // Initialize the seed and calle the Mersenne algorithm
     random_device rd;
@@ -92,12 +95,12 @@ void VMC::MCIntegration(double& energySum, double& energySum2)
 
     // Loop over MC cycles
     for (int cycle = 0; cycle < nCycles; cycle++){
-        waveFuncOld = waveFunc2(rOld);
+        waveFuncOld = waveFunc(rOld);
         for (int i = 0; i < nParticles; i++){
             for (int j = 0; j < nDimensions; j++){
                 rNew(i,j) = rOld(i,j) + stepLength*(distribution(gen)-0.5);
             }
-            waveFuncNew = waveFunc2(rNew);
+            waveFuncNew = waveFunc(rNew);
 
             if (distribution(gen) <= (waveFuncNew*waveFuncNew) / (waveFuncOld*waveFuncOld)) {
                 for (int j = 0; j < nDimensions; j++){
@@ -118,6 +121,7 @@ void VMC::MCIntegration(double& energySum, double& energySum2)
 
 
         }
+        meanDistance += rDiff(rNew);
 
 
         // Adjust the step length towards an optimal value
@@ -139,7 +143,7 @@ double VMC::localEnergy(const mat &r)
 
     double waveFuncPlus = 0;
     double waveFuncMinus = 0;
-    double waveFuncCurrent = waveFunc2(r);
+    double waveFuncCurrent = waveFunc(r);
 
     double kineticEnergy = 0;
 
@@ -147,8 +151,8 @@ double VMC::localEnergy(const mat &r)
         for (int j = 0; j < nDimensions; j++){
             rPlus(i,j) += h;
             rMinus(i,j) -= h;
-            waveFuncMinus = waveFunc2(rMinus);
-            waveFuncPlus = waveFunc2(rPlus);
+            waveFuncMinus = waveFunc(rMinus);
+            waveFuncPlus = waveFunc(rPlus);
             kineticEnergy -= (waveFuncMinus + waveFuncPlus - 2 * waveFuncCurrent);
             rPlus(i,j) = r(i,j);
             rMinus(i,j) = r(i,j);
@@ -239,6 +243,24 @@ double VMC::waveFunc2(const mat &r)
 }
 
 
+double VMC::rDiff(const mat &r)
+{
+
+    double r12 = 0;
+    double argument2 = 0;
+    for (int i = 0; i < nParticles; i++){
+        for (int j = i+1; j < nParticles; j++){
+            r12 = 0;
+            for (int k = 0; k < nDimensions; k++){
+                r12 += (r(i,k) - r(j,k)) * (r(i,k) - r(j,k));
+            }
+            argument2 += r12;
+        }
+    }
+
+    return argument2;
+}
+
 
 void VMC::acceptanceTest(int cycles){
     double accepted_prob = accepted_states/(cycles*nParticles);
@@ -249,6 +271,48 @@ void VMC::acceptanceTest(int cycles){
     }
 }
 
+
+void VMC::optimalAlpha()
+{
+    double alphaMax = 0.8;
+    double alphaMin = 0.3;
+    double stepSize = 0.05;
+
+    int N = (int) ((alphaMax - alphaMin) / stepSize);
+
+    vec energies = zeros<vec>(N);
+    vec alphas = zeros<vec>(N);
+
+    int counter = 0;
+    for (alpha = alphaMin; alpha <= alphaMax; alpha += stepSize){
+
+        accepted_states = 0;
+        rOld = zeros<mat>(nParticles, nDimensions);
+        rNew = zeros<mat>(nParticles, nDimensions);
+        double energySum = 0;
+        double energySum2 = 0;
+        double meanDistance = 0;
+        MCIntegration(energySum, energySum2, meanDistance);
+        energies(counter) = energySum;
+        alphas(counter) = alpha;
+        counter++;
+
+    }
+
+    double min = energies(0);
+    int minIndex = 0;
+    for (int i = 0; i < N; i++){
+        if (energies(i) < min){
+            min = energies(i);
+            minIndex = i;
+        }
+    }
+
+    alpha = alphas(minIndex);
+
+    cout << "Optimal alpha: " << alpha << endl;
+
+}
 
 
 void VMC::optimalAlphaBeta()
@@ -276,7 +340,8 @@ void VMC::optimalAlphaBeta()
             rNew = zeros<mat>(nParticles, nDimensions);
             double energySum = 0;
             double energySum2 = 0;
-            MCIntegration(energySum, energySum2);
+            double meanDistance = 0;
+            MCIntegration(energySum, energySum2, meanDistance);
             energies(counter) = energySum;
             alphas(counter) = alpha;
             betas(counter) = beta;
