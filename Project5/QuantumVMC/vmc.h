@@ -14,10 +14,12 @@ public:
 
 
 private:
+    void MCIntegration(double &energySum, double &energySum2);
     double waveFunc(const mat &r);
     double waveFunc2(const mat &r);
     double localEnergy(const mat &r);
     void acceptanceTest(int cycles);
+    void optimalAlphaBeta();
     int nDimensions;
     double omega;
     double stepLength;
