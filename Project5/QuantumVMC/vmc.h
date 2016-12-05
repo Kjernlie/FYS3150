@@ -7,7 +7,7 @@ using namespace arma;
 class VMC
 {
 public:
-    VMC();
+    VMC(int T);
     void runMCIntegration();
     void writeToFile(double energy, double variance);
 
@@ -36,4 +36,6 @@ private:
     int perturbation;
     std::ofstream m_file;
     double beta;
+    double m_r12;
+    int m_T;
 };
