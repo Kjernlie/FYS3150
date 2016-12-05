@@ -18,7 +18,7 @@ VMC::VMC(int T) :
     stepLength(1.0),
     nParticles(2),
     alpha(0.9),
-    nCycles(2000000),
+    nCycles(200000),
     accepted_states(0),
     h(0.00001),
     h2(1./double(h*h)),
@@ -40,32 +40,32 @@ void VMC::runMCIntegration()
     m_file.open(filename);
 
 
-    for (alpha = 0.6; alpha <= 1.2; alpha += 0.05)
-    {
+//    for (alpha = 0.6; alpha <= 1.2; alpha += 0.05)
+//    {
 
         //optimalAlpha();
         //optimalAlphaBeta();
 
-        accepted_states = 0;
+    accepted_states = 0;
 
-        rOld = zeros<mat>(nParticles, nDimensions);
-        rNew = zeros<mat>(nParticles, nDimensions);
-        double energySum = 0;
-        double energySum2 = 0;
-        double meanDistance = 0;
-        MCIntegration(energySum, energySum2, meanDistance);
+    rOld = zeros<mat>(nParticles, nDimensions);
+    rNew = zeros<mat>(nParticles, nDimensions);
+    double energySum = 0;
+    double energySum2 = 0;
+    double meanDistance = 0;
+    MCIntegration(energySum, energySum2, meanDistance);
 
-        double energy = energySum/(nCycles * nParticles);
-        double energy2 = energySum2/(nCycles * nParticles);
-        double variance = energy2 - energy*energy;
-        cout << "Energy: " << energy << endl;
-        cout << "Variance: " << variance << endl;
-        cout << "Acceptance rate: " << accepted_states/ (nCycles*nParticles) << endl;
-        cout << "Step length: " << stepLength << endl;
-        cout << "Mean distance: " << meanDistance/((double)nCycles/1000) << endl;
+    double energy = energySum/(nCycles * nParticles);
+    double energy2 = energySum2/(nCycles * nParticles);
+    double variance = energy2 - energy*energy;
+    cout << "Energy: " << energy << endl;
+    cout << "Variance: " << variance << endl;
+    cout << "Acceptance rate: " << accepted_states/ (nCycles*nParticles) << endl;
+    cout << "Step length: " << stepLength << endl;
+    cout << "Mean distance: " << meanDistance/((double)nCycles/1000) << endl;
 
-        writeToFile(energy, variance);
-    }
+    //writeToFile(energy, variance);
+//    }
 
 }
 

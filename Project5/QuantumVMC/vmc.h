@@ -10,6 +10,8 @@ public:
     VMC(int T);
     void runMCIntegration();
     void writeToFile(double energy, double variance);
+    double omega;
+    double stepLength;
 
 
 
@@ -23,8 +25,6 @@ private:
     void optimalAlpha();
     double rDiff(const mat &r);
     int nDimensions;
-    double omega;
-    double stepLength;
     int nParticles;
     double alpha;
     int nCycles;
